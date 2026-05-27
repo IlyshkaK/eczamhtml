@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Тренажёр тестов</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="view-switcher">
+    <button class="view-btn active" onclick="setViewMode('desktop', this)">
+      <span>🖥️</span> Обычная версия
+    </button>
+    <button class="view-btn" onclick="setViewMode('mobile', this)">
+      <span>📱</span> Мобильная версия
+    </button>
+  </div>
+
+  <main class="app">
+    <section id="menuScreen">
+      <h1 class="title">Тренажёр тестов</h1>
+      <p class="subtitle">
+        Выбери предмет или экзаменационный режим. На каждый тест даётся 20 минут.
+      </p>
+
+      <div class="mode-grid">
+        <div class="mode-card" onclick="startTest('subject1')">
+          <div class="card-icon mechanical">⚙️</div>
+          <div>
+            <h3>Механическое оборудование</h3>
+            <p>Вопросы по механическому оборудованию.</p>
+          </div>
+        </div>
+
+        <div class="mode-card" onclick="startTest('subject2')">
+          <div class="card-icon pneumatic">💨</div>
+          <div>
+            <h3>Пневматическое оборудование</h3>
+            <p>Вопросы по пневматическому оборудованию.</p>
+          </div>
+        </div>
+
+        <div class="mode-card" onclick="startTest('subject3')">
+          <div class="card-icon electric">⚡</div>
+          <div>
+            <h3>Электрическое оборудование</h3>
+            <p>Вопросы по электрическому оборудованию.</p>
+          </div>
+        </div>
+
+        <div class="mode-card exam-card" onclick="startTest('examRandom')">
+          <div class="card-icon random">🎲</div>
+          <div>
+            <h3>Экзамен в перемешку</h3>
+            <p>Вопросы из всех предметов в случайном порядке.</p>
+          </div>
+        </div>
+
+        <div class="mode-card exam-card" onclick="startTest('examTickets')">
+          <div class="card-icon ticket">🎫</div>
+          <div>
+            <h3>Экзамен по билетам</h3>
+            <p>Вопросы идут так, как расположены в билетах.</p>
+          </div>
+        </div>
+
+        <div class="mode-card exam-card full-card" onclick="startTest('fullEquipment')">
+          <div class="card-icon full">🧠</div>
+          <div>
+            <h3>Полное тестирование по оборудованию</h3>
+            <p>Все вопросы из всех разделов в случайном порядке. Без таймера.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <footer class="menu-footer">
+        <div>Удачной подготовки!</div>
+      </footer>
+    </section>
+
+    <section id="testScreen" class="hidden">
+      <div class="top-bar">
+        <div class="pill" id="modeName">Режим</div>
+        <div class="pill timer-pill" id="timerText">20:00</div>
+        <div class="pill" id="progressText">Вопрос 1 / 10</div>
+        <div class="pill" id="scoreText">Верно: 0</div>
+      </div>
+
+      <div class="question-card">
+        <div class="question-text" id="questionText"></div>
+        <div class="answers" id="answersList"></div>
+      </div>
+
+      <div class="controls">
+        <button class="secondary-btn" onclick="goMenu()">В меню</button>
+        <button class="main-btn" id="nextBtn" onclick="nextQuestion()" disabled>
+          Следующий вопрос
+        </button>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="hidden">
+      <div class="result-box">
+        <h2>Результат</h2>
+        <div class="score" id="finalScore">0 / 0</div>
+        <p id="finalText"></p>
+
+        <div class="controls result-controls">
+          <button class="secondary-btn" onclick="goMenu()">Вернуться в меню</button>
+          <button class="main-btn" onclick="restartLastTest()">Пройти ещё раз</button>
+        </div>
+
+        <div class="mistakes" id="mistakesList"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="questions-mechanical.js"></script>
+  <script src="questions-pneumatic.js"></script>
+  <script src="questions-electrical.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
