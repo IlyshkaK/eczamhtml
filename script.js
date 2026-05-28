@@ -15,6 +15,69 @@ const MODE_NAMES = {
   fullEquipment: '🧠 Полное тестирование по оборудованию'
 };
 
+
+const INTRO_CONFIG = {
+  subject1: {
+    icon: '⚙️',
+    title: 'Механическое оборудование',
+    button: 'Начать тест',
+    rules: [
+      'Вопросы идут в случайном порядке.',
+      'Варианты ответов перемешиваются.',
+      'На прохождение даётся 20 минут.',
+      'После завершения показываются ошибки и развёрнутые объяснения.'
+    ]
+  },
+  subject2: {
+    icon: '💨',
+    title: 'Пневматическое оборудование',
+    button: 'Начать тест',
+    rules: [
+      'Вопросы идут в случайном порядке.',
+      'Варианты ответов перемешиваются.',
+      'На прохождение даётся 20 минут.',
+      'После завершения показываются ошибки и развёрнутые объяснения.'
+    ]
+  },
+  subject3: {
+    icon: '⚡',
+    title: 'Электрическое оборудование',
+    button: 'Начать тест',
+    rules: [
+      'Вопросы идут в случайном порядке.',
+      'Варианты ответов перемешиваются.',
+      'На прохождение даётся 20 минут.',
+      'После завершения показываются ошибки и развёрнутые объяснения.'
+    ]
+  },
+  examTickets: {
+    icon: '🎫',
+    title: 'Экзамен по билетам',
+    button: 'Начать экзамен',
+    rules: [
+      'Всего 35 билетов.',
+      'В каждом билете сразу 3 вопроса.',
+      'Допускается только 1 ошибка в билете.',
+      'При 2 ошибках билет считается несданным.',
+      'После несданного билета можно перейти к следующему.',
+      'Таймер в этом режиме отсутствует.',
+      'В конце показывается количество успешно сданных билетов.'
+    ]
+  },
+  fullEquipment: {
+    icon: '🧠',
+    title: 'Полное тестирование по оборудованию',
+    button: 'Начать тестирование',
+    rules: [
+      'В тест входят вопросы из механического, пневматического и электрического оборудования.',
+      'Все вопросы идут в случайном порядке.',
+      'Варианты ответов перемешиваются.',
+      'Таймер в этом режиме отсутствует.',
+      'После завершения показываются ошибки и развёрнутые объяснения.'
+    ]
+  }
+};
+
 let currentMode = null;
 let currentQuestions = [];
 let currentIndex = 0;
@@ -33,6 +96,48 @@ let ticketExamAnswered = 0;
 let ticketExamWrongCount = 0;
 let ticketExamCurrentResults = [];
 let ticketExamHistory = [];
+let pendingIntroMode = null;
+
+
+function showIntro(mode) {
+  pendingIntroMode = mode;
+
+  const config = INTRO_CONFIG[mode];
+
+  if (!config) {
+    startTest(mode);
+    return;
+  }
+
+  document.getElementById('menuScreen').classList.add('hidden');
+  document.getElementById('introScreen').classList.add('hidden');
+  document.getElementById('testScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('introScreen').classList.remove('hidden');
+
+  document.getElementById('introIcon').textContent = config.icon;
+  document.getElementById('introTitle').textContent = config.title;
+
+  const introRules = document.getElementById('introRules');
+
+  introRules.innerHTML = config.rules
+    .map(rule => `<div class="intro-rule">• ${escapeHtml(rule)}</div>`)
+    .join('');
+
+  const startButton = document.querySelector('.intro-controls .main-btn');
+
+  if (startButton) {
+    startButton.textContent = config.button;
+  }
+}
+
+function startIntroMode() {
+  if (!pendingIntroMode) return;
+
+  document.getElementById('introScreen').classList.add('hidden');
+  startTest(pendingIntroMode);
+}
+
 
 function startTest(mode) {
   currentMode = mode;
@@ -941,6 +1046,9 @@ function goMenu() {
   ticketExamCurrentResults = [];
   ticketExamHistory = [];
 
+  pendingIntroMode = null;
+
+  document.getElementById('introScreen').classList.add('hidden');
   document.getElementById('testScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.add('hidden');
   document.getElementById('menuScreen').classList.remove('hidden');

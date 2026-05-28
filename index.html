@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Тренажёр тестов</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -21,11 +21,11 @@
     <section id="menuScreen">
       <h1 class="title">Тренажёр тестов</h1>
       <p class="subtitle">
-        Выбери предмет или экзаменационный режим. На каждый тест даётся 20 минут.
+        Выбери предмет или экзаменационный режим.
       </p>
 
       <div class="mode-grid">
-        <div class="mode-card" onclick="startTest('subject1')">
+        <div class="mode-card" onclick="showIntro('subject1')">
           <div class="card-icon mechanical">⚙️</div>
           <div>
             <h3>Механическое оборудование</h3>
@@ -33,7 +33,7 @@
           </div>
         </div>
 
-        <div class="mode-card" onclick="startTest('subject2')">
+        <div class="mode-card" onclick="showIntro('subject2')">
           <div class="card-icon pneumatic">💨</div>
           <div>
             <h3>Пневматическое оборудование</h3>
@@ -41,7 +41,7 @@
           </div>
         </div>
 
-        <div class="mode-card" onclick="startTest('subject3')">
+        <div class="mode-card" onclick="showIntro('subject3')">
           <div class="card-icon electric">⚡</div>
           <div>
             <h3>Электрическое оборудование</h3>
@@ -51,7 +51,7 @@
 
         
 
-        <div class="mode-card exam-card" onclick="startTest('examTickets')">
+        <div class="mode-card exam-card" onclick="showIntro('examTickets')">
           <div class="card-icon ticket">🎫</div>
           <div>
             <h3>Экзамен по билетам</h3>
@@ -59,7 +59,7 @@
           </div>
         </div>
 
-        <div class="mode-card exam-card full-card" onclick="startTest('fullEquipment')">
+        <div class="mode-card exam-card full-card" onclick="showIntro('fullEquipment')">
           <div class="card-icon full">🧠</div>
           <div>
             <h3>Полное тестирование по оборудованию</h3>
@@ -72,6 +72,20 @@
       <footer class="menu-footer">
         <div>Удачной подготовки!</div>
       </footer>
+    </section>
+
+
+    <section id="introScreen" class="hidden">
+      <div class="intro-card">
+        <div class="intro-icon" id="introIcon">📘</div>
+        <h2 id="introTitle">Название режима</h2>
+        <div class="intro-rules" id="introRules"></div>
+
+        <div class="controls intro-controls">
+          <button class="secondary-btn" onclick="goMenu()">Вернуться в меню</button>
+          <button class="main-btn" onclick="startIntroMode()">Начать</button>
+        </div>
+      </div>
     </section>
 
     <section id="testScreen" class="hidden">
