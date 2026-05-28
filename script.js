@@ -4,7 +4,6 @@ let startTime = null;
 const QUESTION_BANK = {
   subject1: MECHANICAL_QUESTIONS,
   subject2: PNEUMATIC_QUESTIONS,
-
   subject3: ELECTRICAL_QUESTIONS
 };
 
@@ -12,7 +11,6 @@ const MODE_NAMES = {
   subject1: '⚙️ Механическое оборудование',
   subject2: '💨 Пневматическое оборудование',
   subject3: '⚡ Электрическое оборудование',
-  examRandom: '🎲 Экзамен в перемешку',
   examTickets: '🎫 Экзамен по билетам',
   fullEquipment: '🧠 Полное тестирование по оборудованию'
 };
@@ -28,6 +26,14 @@ let timeLeft = EXAM_TIME_SECONDS;
 let resultReason = 'completed';
 let timerEnabled = true;
 
+let ticketExamTickets = [];
+let ticketExamIndex = 0;
+let ticketExamSuccessCount = 0;
+let ticketExamAnswered = 0;
+let ticketExamWrongCount = 0;
+let ticketExamCurrentResults = [];
+let ticketExamHistory = [];
+
 function startTest(mode) {
   currentMode = mode;
   currentQuestions = buildQuestionList(mode);
@@ -36,7 +42,7 @@ function startTest(mode) {
   selectedAnswer = null;
   userAnswers = [];
   resultReason = 'completed';
-  timerEnabled = mode !== 'fullEquipment';
+  timerEnabled = mode !== 'fullEquipment' && mode !== 'examTickets';
   startTime = Date.now();
 
   document.getElementById('menuScreen').classList.add('hidden');
@@ -54,6 +60,11 @@ function startTest(mode) {
     timerText.classList.add('hidden');
   }
 
+  if (mode === 'examTickets') {
+    startTicketExam();
+    return;
+  }
+
   renderQuestion();
 }
 
@@ -62,10 +73,14 @@ function buildQuestionList(mode) {
     const fixedQuestion = QUESTION_BANK.subject1.find(question => question.fixedFirst);
     const otherQuestions = QUESTION_BANK.subject1.filter(question => !question.fixedFirst);
 
-    return [
-      prepareQuestion(fixedQuestion),
-      ...shuffleArray(otherQuestions).map(question => prepareQuestion(question))
-    ];
+    if (fixedQuestion) {
+      return [
+        prepareQuestion(fixedQuestion),
+        ...shuffleArray(otherQuestions).map(question => prepareQuestion(question))
+      ];
+    }
+
+    return shuffleArray([...QUESTION_BANK.subject1]).map(question => prepareQuestion(question));
   }
 
   if (mode === 'fullEquipment') {
@@ -78,30 +93,11 @@ function buildQuestionList(mode) {
     return shuffleArray(questions).map(question => prepareQuestion(question));
   }
 
-  if (mode === 'examRandom') {
-    const questions = [
-      ...QUESTION_BANK.subject1,
-      ...QUESTION_BANK.subject2,
-      ...QUESTION_BANK.subject3
-    ];
-
-    return shuffleArray(questions).map(question => prepareQuestion(question));
-  }
-
   if (mode === 'examTickets') {
-    const tickets = buildAllTickets();
-
-    const questions = tickets.flatMap(ticket => {
-      return ticket.questions.map(question => ({
-        ...question,
-        ticketTitle: ticket.ticketTitle
-      }));
-    });
-
-    return questions.map(question => prepareQuestion(question));
+    return [];
   }
 
-  return shuffleArray([...QUESTION_BANK[mode]]).map(question => prepareQuestion(question));
+  return shuffleArray([...(QUESTION_BANK[mode] || [])]).map(question => prepareQuestion(question));
 }
 
 function buildAllTickets() {
@@ -112,19 +108,26 @@ function buildAllTickets() {
     ...QUESTION_BANK.subject2,
     ...QUESTION_BANK.subject3
   ].forEach(question => {
-    const ticketTitle = question.ticketTitle || 'Без билета';
+    const ticketTitles = question.ticketTitles || [question.ticketTitle || 'Без билета'];
 
-    if (!ticketsMap[ticketTitle]) {
-      ticketsMap[ticketTitle] = {
-        ticketTitle,
-        questions: []
-      };
-    }
+    ticketTitles.forEach(ticketTitle => {
+      if (!ticketsMap[ticketTitle]) {
+        ticketsMap[ticketTitle] = {
+          ticketTitle,
+          questions: []
+        };
+      }
 
-    ticketsMap[ticketTitle].questions.push(question);
+      ticketsMap[ticketTitle].questions.push(question);
+    });
   });
 
-  return Object.values(ticketsMap);
+  return Object.values(ticketsMap).sort((a, b) => {
+    const aNumber = Number(String(a.ticketTitle).replace(/\D/g, '')) || 0;
+    const bNumber = Number(String(b.ticketTitle).replace(/\D/g, '')) || 0;
+
+    return aNumber - bNumber;
+  });
 }
 
 function prepareQuestion(question) {
@@ -163,6 +166,405 @@ function updateTimerText() {
 
   timerText.classList.toggle('warning', timeLeft <= 5 * 60 && timeLeft > 60);
   timerText.classList.toggle('danger', timeLeft <= 60);
+}
+
+function startTicketExam() {
+  ticketExamTickets = buildExamTicketsForMode();
+  ticketExamIndex = 0;
+  ticketExamSuccessCount = 0;
+  ticketExamHistory = [];
+  renderTicketExam();
+}
+
+function buildExamTicketsForMode() {
+  const tickets = buildAllTickets()
+    .filter(ticket => ticket.ticketTitle !== 'Без билета')
+    .map(ticket => {
+      return {
+        ticketTitle: ticket.ticketTitle,
+        questions: ticket.questions
+          .slice(0, 3)
+          .map(question => prepareQuestion(question))
+      };
+    })
+    .filter(ticket => ticket.questions.length > 0);
+
+  return tickets;
+}
+
+function renderTicketExam() {
+  const ticket = ticketExamTickets[ticketExamIndex];
+
+  if (!ticket) {
+    showTicketExamResult();
+    return;
+  }
+
+  ticketExamAnswered = 0;
+  ticketExamWrongCount = 0;
+  ticketExamCurrentResults = [];
+
+  document.getElementById('modeName').textContent = MODE_NAMES[currentMode];
+  document.getElementById('progressText').textContent =
+    `Билет ${ticketExamIndex + 1} / ${ticketExamTickets.length}`;
+  document.getElementById('scoreText').textContent =
+    `Сдано: ${ticketExamSuccessCount}`;
+
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.disabled = true;
+  nextBtn.textContent =
+    ticketExamIndex === ticketExamTickets.length - 1
+      ? 'Завершить экзамен'
+      : 'Следующий билет';
+
+  const questionText = document.getElementById('questionText');
+  questionText.innerHTML = `
+    <div class="ticket-exam-title">${escapeHtml(ticket.ticketTitle)}</div>
+    <div class="ticket-exam-subtitle">
+      В билете 3 вопроса. Можно ошибиться только 1 раз.
+    </div>
+    <div id="ticketStatus" class="ticket-status"></div>
+  `;
+
+  const answersList = document.getElementById('answersList');
+  answersList.innerHTML = '';
+
+  ticket.questions.forEach((question, questionIndex) => {
+    const block = document.createElement('div');
+    block.className = 'ticket-question-block';
+    block.dataset.questionIndex = questionIndex;
+
+    if (question.type === 'input-table') {
+      block.innerHTML = `
+        <div class="ticket-question-title">
+          ${questionIndex + 1}. ${escapeHtml(question.question)}
+        </div>
+        ${renderInputTableForTicket(question.table, questionIndex)}
+        <button class="main-btn table-check-btn" onclick="checkTicketInputTable(${questionIndex})">
+          Проверить таблицу
+        </button>
+      `;
+    } else {
+      const answerButtons = question.answers.map((answer, answerIndex) => {
+        return `
+          <button class="answer-btn" onclick="selectTicketAnswer(${questionIndex}, ${answerIndex}, this)">
+            ${escapeHtml(answer)}
+          </button>
+        `;
+      }).join('');
+
+      block.innerHTML = `
+        <div class="ticket-question-title">
+          ${questionIndex + 1}. ${escapeHtml(question.question)}
+        </div>
+        <div class="answers">${answerButtons}</div>
+      `;
+    }
+
+    answersList.appendChild(block);
+  });
+}
+
+function renderInputTableForTicket(table, questionIndex) {
+  const headers = table.headers
+    .map(header => `<th>${escapeHtml(header)}</th>`)
+    .join('');
+
+  const rows = table.rows
+    .map((row, rowIndex) => {
+      const cells = row.cells.map((cell, visualCellIndex) => {
+        const colspan = cell.colspan || 1;
+        const firstColIndex = getFirstColumnIndex(row.cells, visualCellIndex);
+
+        return `
+          <td colspan="${colspan}">
+            <input
+              class="table-input ticket-table-input"
+              data-question="${questionIndex}"
+              data-row="${rowIndex}"
+              data-col="${firstColIndex}"
+              placeholder="Введите ответ"
+              title="${escapeHtml(cell.hint || '')}"
+            />
+          </td>
+        `;
+      }).join('');
+
+      return `
+        <tr>
+          <td>${escapeHtml(row.label)}</td>
+          ${cells}
+        </tr>
+      `;
+    })
+    .join('');
+
+  return `
+    <div class="table-wrapper">
+      <table class="question-table">
+        <thead>
+          <tr>${headers}</tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function selectTicketAnswer(questionIndex, answerIndex, button) {
+  const ticket = ticketExamTickets[ticketExamIndex];
+  const question = ticket.questions[questionIndex];
+  const block = button.closest('.ticket-question-block');
+
+  if (block.classList.contains('answered')) return;
+
+  block.classList.add('answered');
+
+  const buttons = block.querySelectorAll('.answer-btn');
+
+  buttons.forEach((btn, index) => {
+    btn.disabled = true;
+
+    if (index === question.correct) {
+      btn.classList.add('correct');
+    }
+
+    if (index === answerIndex && index !== question.correct) {
+      btn.classList.add('wrong');
+    }
+  });
+
+  const isCorrect = answerIndex === question.correct;
+
+  registerTicketAnswer({
+    question: question.question,
+    ticketTitle: ticket.ticketTitle,
+    answers: question.answers,
+    correct: question.correct,
+    selected: answerIndex,
+    explanation: question.explanation || '',
+    isCorrect
+  });
+}
+
+function checkTicketInputTable(questionIndex) {
+  const ticket = ticketExamTickets[ticketExamIndex];
+  const question = ticket.questions[questionIndex];
+  const block = document.querySelector(`.ticket-question-block[data-question-index="${questionIndex}"]`);
+
+  if (!block || block.classList.contains('answered')) return;
+
+  const inputs = block.querySelectorAll('.ticket-table-input');
+
+  let correctCells = 0;
+  let totalCells = 0;
+
+  inputs.forEach(input => {
+    const row = Number(input.dataset.row);
+    const col = Number(input.dataset.col);
+
+    const userValue = normalizeAnswer(input.value);
+    const correctValue = normalizeAnswer(question.table.rows[row].values[col]);
+
+    totalCells++;
+
+    if (userValue === correctValue) {
+      correctCells++;
+      input.classList.add('table-correct');
+      input.classList.remove('table-wrong');
+    } else {
+      input.classList.add('table-wrong');
+      input.classList.remove('table-correct');
+    }
+
+    input.disabled = true;
+  });
+
+  const isCorrect = correctCells === totalCells;
+
+  const checkBtn = block.querySelector('.table-check-btn');
+
+  if (checkBtn) {
+    checkBtn.disabled = true;
+    checkBtn.textContent = `Проверено: ${correctCells} / ${totalCells}`;
+  }
+
+  block.classList.add('answered');
+
+  registerTicketAnswer({
+    question: question.question,
+    ticketTitle: ticket.ticketTitle,
+    type: 'input-table',
+    table: question.table,
+    correctCells,
+    totalCells,
+    selected: isCorrect ? 0 : -1,
+    correct: 0,
+    explanation: '',
+    isCorrect
+  });
+}
+
+function registerTicketAnswer(result) {
+  ticketExamAnswered++;
+
+  if (!result.isCorrect) {
+    ticketExamWrongCount++;
+  }
+
+  ticketExamCurrentResults.push(result);
+
+  updateTicketStatus();
+
+  if (ticketExamWrongCount >= 2) {
+    failCurrentTicket();
+    return;
+  }
+
+  const ticket = ticketExamTickets[ticketExamIndex];
+
+  if (ticketExamAnswered >= ticket.questions.length) {
+    passCurrentTicket();
+  }
+}
+
+function updateTicketStatus() {
+  const status = document.getElementById('ticketStatus');
+
+  if (!status) return;
+
+  status.textContent =
+    `Ошибок: ${ticketExamWrongCount} / 2 · Отвечено: ${ticketExamAnswered} / ${ticketExamTickets[ticketExamIndex].questions.length}`;
+
+  status.classList.toggle('ticket-status-danger', ticketExamWrongCount >= 2);
+}
+
+function failCurrentTicket() {
+  const ticket = ticketExamTickets[ticketExamIndex];
+
+  disableCurrentTicketInputs();
+
+  ticketExamHistory.push({
+    ticketTitle: ticket.ticketTitle,
+    passed: false,
+    wrongCount: ticketExamWrongCount,
+    results: ticketExamCurrentResults
+  });
+
+  showTicketStatusMessage('Экзамен завален', false);
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function passCurrentTicket() {
+  const ticket = ticketExamTickets[ticketExamIndex];
+
+  ticketExamSuccessCount++;
+
+  ticketExamHistory.push({
+    ticketTitle: ticket.ticketTitle,
+    passed: true,
+    wrongCount: ticketExamWrongCount,
+    results: ticketExamCurrentResults
+  });
+
+  showTicketStatusMessage('Билет сдан', true);
+  document.getElementById('scoreText').textContent =
+    `Сдано: ${ticketExamSuccessCount}`;
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function showTicketStatusMessage(message, passed) {
+  const status = document.getElementById('ticketStatus');
+
+  if (!status) return;
+
+  status.textContent = message;
+  status.classList.toggle('ticket-status-success', passed);
+  status.classList.toggle('ticket-status-danger', !passed);
+}
+
+function disableCurrentTicketInputs() {
+  const blocks = document.querySelectorAll('.ticket-question-block');
+
+  blocks.forEach(block => {
+    block.classList.add('answered');
+
+    block.querySelectorAll('button').forEach(button => {
+      button.disabled = true;
+    });
+
+    block.querySelectorAll('input').forEach(input => {
+      input.disabled = true;
+    });
+  });
+}
+
+function showTicketExamResult() {
+  clearInterval(timer);
+
+  document.getElementById('testScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+
+  const totalTickets = ticketExamTickets.length;
+  const failedTickets = totalTickets - ticketExamSuccessCount;
+
+  document.getElementById('finalScore').textContent =
+    `${ticketExamSuccessCount} / ${totalTickets}`;
+
+  document.getElementById('finalText').innerHTML =
+    `Успешно пройдено билетов: ${ticketExamSuccessCount}<br>Завалено билетов: ${failedTickets}<br>Режим без таймера`;
+
+  renderTicketExamMistakes();
+}
+
+function renderTicketExamMistakes() {
+  const mistakesList = document.getElementById('mistakesList');
+  mistakesList.innerHTML = '';
+
+  const failed = ticketExamHistory.filter(ticket => !ticket.passed);
+
+  if (failed.length === 0) {
+    mistakesList.innerHTML =
+      '<div class="mistake-card">Все билеты сданы успешно.</div>';
+    return;
+  }
+
+  failed.forEach(ticket => {
+    const card = document.createElement('div');
+    card.className = 'mistake-card';
+
+    const wrongAnswers = ticket.results
+      .filter(result => !result.isCorrect)
+      .map(result => {
+        if (result.type === 'input-table') {
+          return `
+            <div class="ticket-result-error">
+              <strong>${escapeHtml(result.question)}</strong><br>
+              Заполнено верно: <b>${result.correctCells} / ${result.totalCells}</b><br>
+              ${renderCorrectTable(result.table)}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="ticket-result-error">
+            <strong>${escapeHtml(result.question)}</strong><br>
+            Ваш ответ: <b>${escapeHtml(result.answers[result.selected])}</b><br>
+            Правильный ответ: <b>${escapeHtml(result.answers[result.correct])}</b><br>
+            Развёрнутое объяснение:<br>
+            ${escapeHtml(result.explanation || 'Объяснение для этого вопроса пока не добавлено.')}
+          </div>
+        `;
+      }).join('<br>');
+
+    card.innerHTML = `
+      <strong>${escapeHtml(ticket.ticketTitle)}</strong><br>
+      Ошибок: ${ticket.wrongCount}<br><br>
+      ${wrongAnswers}
+    `;
+
+    mistakesList.appendChild(card);
+  });
 }
 
 function renderQuestion() {
@@ -385,6 +787,18 @@ function selectAnswer(answerIndex) {
 }
 
 function nextQuestion() {
+  if (currentMode === 'examTickets') {
+    ticketExamIndex++;
+
+    if (ticketExamIndex < ticketExamTickets.length) {
+      renderTicketExam();
+    } else {
+      showTicketExamResult();
+    }
+
+    return;
+  }
+
   if (currentIndex < currentQuestions.length - 1) {
     currentIndex++;
     renderQuestion();
@@ -519,6 +933,13 @@ function renderCorrectTable(table) {
 
 function goMenu() {
   clearInterval(timer);
+  ticketExamTickets = [];
+  ticketExamIndex = 0;
+  ticketExamSuccessCount = 0;
+  ticketExamAnswered = 0;
+  ticketExamWrongCount = 0;
+  ticketExamCurrentResults = [];
+  ticketExamHistory = [];
 
   document.getElementById('testScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.add('hidden');

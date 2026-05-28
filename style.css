@@ -715,3 +715,60 @@ body.mobile-view .answer-btn {
   background: rgba(95, 165, 255, 0.2);
   border: 1px solid #5fa5ff;
 }
+
+
+/* Экзамен по билетам */
+.ticket-exam-title {
+  font-size: 34px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.ticket-exam-subtitle {
+  color: #c3cff0;
+  text-align: center;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.ticket-status {
+  min-height: 24px;
+  text-align: center;
+  font-weight: 800;
+  color: #dce7ff;
+}
+
+.ticket-status-success {
+  color: #4ade80;
+}
+
+.ticket-status-danger {
+  color: #fb7185;
+}
+
+.ticket-question-block {
+  padding: 18px;
+  border: 1px solid rgba(180, 205, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 16px;
+}
+
+.ticket-question-title {
+  font-size: 18px;
+  line-height: 1.45;
+  margin-bottom: 14px;
+  font-weight: 800;
+}
+
+.ticket-question-block.answered {
+  opacity: 0.92;
+}
+
+.ticket-result-error {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(251, 113, 133, 0.08);
+  border: 1px solid rgba(251, 113, 133, 0.18);
+}
