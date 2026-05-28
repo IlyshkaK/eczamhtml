@@ -19,51 +19,60 @@
 
   <main class="app">
     <section id="menuScreen">
-      <h1 class="title">Тренажёр тестов</h1>
-      <p class="subtitle">
+      <div class="exam-group-switcher">
+        <button class="exam-group-btn active" onclick="setExamGroup('equipment', this)">
+          🚇 Оборудование
+        </button>
+        <button class="exam-group-btn" onclick="setExamGroup('general', this)">
+          📘 ПТЭ · Охрана труда · Управление поездом
+        </button>
+      </div>
+
+      <h1 class="title" id="menuTitle">Тренажёр по оборудованию</h1>
+      <p class="subtitle" id="menuSubtitle">
         Выбери предмет или экзаменационный режим.
       </p>
 
       <div class="mode-grid">
-        <div class="mode-card" onclick="showIntro('subject1')">
-          <div class="card-icon mechanical">⚙️</div>
+        <div class="mode-card" id="modeCard1" onclick="showIntro('subject1')">
+          <div class="card-icon mechanical" id="cardIcon1">⚙️</div>
           <div>
-            <h3>Механическое оборудование</h3>
-            <p>Вопросы по механическому оборудованию.</p>
+            <h3 id="cardTitle1">Механическое оборудование</h3>
+            <p id="cardText1">Вопросы по механическому оборудованию.</p>
           </div>
         </div>
 
-        <div class="mode-card" onclick="showIntro('subject2')">
-          <div class="card-icon pneumatic">💨</div>
+        <div class="mode-card" id="modeCard2" onclick="showIntro('subject2')">
+          <div class="card-icon pneumatic" id="cardIcon2">💨</div>
           <div>
-            <h3>Пневматическое оборудование</h3>
-            <p>Вопросы по пневматическому оборудованию.</p>
+            <h3 id="cardTitle2">Пневматическое оборудование</h3>
+            <p id="cardText2">Вопросы по пневматическому оборудованию.</p>
           </div>
         </div>
 
-        <div class="mode-card" onclick="showIntro('subject3')">
-          <div class="card-icon electric">⚡</div>
+        <div class="mode-card" id="modeCard3" onclick="showIntro('subject3')">
+          <div class="card-icon electric" id="cardIcon3">⚡</div>
           <div>
-            <h3>Электрическое оборудование</h3>
-            <p>Вопросы по электрическому оборудованию.</p>
+            <h3 id="cardTitle3">Электрическое оборудование</h3>
+            <p id="cardText3">Вопросы по электрическому оборудованию.</p>
           </div>
         </div>
 
         
 
-        <div class="mode-card exam-card" onclick="showIntro('examTickets')">
-          <div class="card-icon ticket">🎫</div>
+        <div class="mode-card exam-card" id="examTicketsCard" onclick="showIntro('examTickets')">
+          <div class="card-icon ticket" id="examTicketsIcon">🎫</div>
           <div>
-            <h3>Экзамен по билетам</h3>
-            <p>Вопросы идут так, как расположены в билетах.</p>
+            <h3 id="examTicketsTitle">Экзамен по билетам</h3>
+            <p id="examTicketsText">Билетный режим по выбранному разделу.</p>
           </div>
         </div>
 
-        <div class="mode-card exam-card full-card" onclick="showIntro('fullEquipment')">
-          <div class="card-icon full">🧠</div>
+        <div class="mode-card exam-card full-card" id="fullTestCard" onclick="showIntro('fullEquipment')">
+          <div class="card-icon full" id="fullTestIcon">🧠</div>
           <div>
-            <h3>Полное тестирование по оборудованию</h3>
-            <p>Все вопросы из всех разделов в случайном порядке. Без таймера.</p>
+            <h3 id="fullTestTitle">Полное тестирование по оборудованию</h3>
+            <p id="fullTestText">Все вопросы из всех разделов в случайном порядке. Без таймера.</p>
           </div>
         </div>
 
@@ -128,6 +137,9 @@
   <script src="questions-mechanical.js"></script>
   <script src="questions-pneumatic.js"></script>
   <script src="questions-electrical.js"></script>
+  <script src="questions-pte.js"></script>
+  <script src="questions-labor.js"></script>
+  <script src="questions-train-control.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

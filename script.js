@@ -1,18 +1,87 @@
 const EXAM_TIME_SECONDS = 20 * 60;
 let startTime = null;
 
-const QUESTION_BANK = {
-  subject1: MECHANICAL_QUESTIONS,
-  subject2: PNEUMATIC_QUESTIONS,
-  subject3: ELECTRICAL_QUESTIONS
+const QUESTION_BANKS = {
+  equipment: {
+    subject1: MECHANICAL_QUESTIONS,
+    subject2: PNEUMATIC_QUESTIONS,
+    subject3: ELECTRICAL_QUESTIONS
+  },
+  general: {
+    subject1: PTE_QUESTIONS,
+    subject2: LABOR_QUESTIONS,
+    subject3: TRAIN_CONTROL_QUESTIONS
+  }
+};
+
+let currentExamGroup = 'equipment';
+let QUESTION_BANK = QUESTION_BANKS[currentExamGroup];
+
+const GROUP_UI = {
+  equipment: {
+    menuTitle: 'Тренажёр по оборудованию',
+    menuSubtitle: 'Выбери предмет, экзамен по билетам или полное тестирование.',
+    subjects: [
+      {
+        title: 'Механическое оборудование',
+        text: 'Вопросы по механическому оборудованию.',
+        icon: '⚙️',
+        iconClass: 'mechanical'
+      },
+      {
+        title: 'Пневматическое оборудование',
+        text: 'Вопросы по пневматическому оборудованию.',
+        icon: '💨',
+        iconClass: 'pneumatic'
+      },
+      {
+        title: 'Электрическое оборудование',
+        text: 'Вопросы по электрическому оборудованию.',
+        icon: '⚡',
+        iconClass: 'electric'
+      }
+    ],
+    examTitle: 'Экзамен по билетам',
+    examText: '35 билетов по оборудованию. В каждом билете 3 вопроса.',
+    fullTitle: 'Полное тестирование по оборудованию',
+    fullText: 'Все вопросы по оборудованию в случайном порядке. Без таймера.'
+  },
+  general: {
+    menuTitle: 'Общий экзамен',
+    menuSubtitle: 'ПТЭ, охрана труда и управление поездом.',
+    subjects: [
+      {
+        title: 'ПТЭ',
+        text: 'Вопросы по правилам технической эксплуатации.',
+        icon: '📘',
+        iconClass: 'mechanical'
+      },
+      {
+        title: 'Охрана труда',
+        text: 'Вопросы по охране труда и безопасности.',
+        icon: '🦺',
+        iconClass: 'pneumatic'
+      },
+      {
+        title: 'Управление поездом',
+        text: 'Вопросы по управлению поездом.',
+        icon: '🚇',
+        iconClass: 'electric'
+      }
+    ],
+    examTitle: 'Экзамен по билетам',
+    examText: 'Билетный режим по ПТЭ, охране труда и управлению поездом.',
+    fullTitle: 'Полное тестирование',
+    fullText: 'Все вопросы общего экзамена в случайном порядке. Без таймера.'
+  }
 };
 
 const MODE_NAMES = {
-  subject1: '⚙️ Механическое оборудование',
-  subject2: '💨 Пневматическое оборудование',
-  subject3: '⚡ Электрическое оборудование',
+  subject1: 'Раздел 1',
+  subject2: 'Раздел 2',
+  subject3: 'Раздел 3',
   examTickets: '🎫 Экзамен по билетам',
-  fullEquipment: '🧠 Полное тестирование по оборудованию'
+  fullEquipment: '🧠 Полное тестирование'
 };
 
 
@@ -99,10 +168,117 @@ let ticketExamHistory = [];
 let pendingIntroMode = null;
 
 
+
+function setExamGroup(group, button) {
+  currentExamGroup = group;
+  QUESTION_BANK = QUESTION_BANKS[currentExamGroup];
+
+  document.querySelectorAll('.exam-group-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  if (button) {
+    button.classList.add('active');
+  }
+
+  updateMenuForGroup();
+}
+
+function updateMenuForGroup() {
+  const config = GROUP_UI[currentExamGroup];
+
+  document.getElementById('menuTitle').textContent = config.menuTitle;
+  document.getElementById('menuSubtitle').textContent = config.menuSubtitle;
+
+  config.subjects.forEach((subject, index) => {
+    const number = index + 1;
+    const icon = document.getElementById(`cardIcon${number}`);
+
+    document.getElementById(`cardTitle${number}`).textContent = subject.title;
+    document.getElementById(`cardText${number}`).textContent = subject.text;
+
+    icon.textContent = subject.icon;
+    icon.className = `card-icon ${subject.iconClass}`;
+  });
+
+  document.getElementById('examTicketsTitle').textContent = config.examTitle;
+  document.getElementById('examTicketsText').textContent = config.examText;
+
+  document.getElementById('fullTestTitle').textContent = config.fullTitle;
+  document.getElementById('fullTestText').textContent = config.fullText;
+}
+
+function getModeDisplayName(mode) {
+  if (mode === 'subject1') return GROUP_UI[currentExamGroup].subjects[0].icon + ' ' + GROUP_UI[currentExamGroup].subjects[0].title;
+  if (mode === 'subject2') return GROUP_UI[currentExamGroup].subjects[1].icon + ' ' + GROUP_UI[currentExamGroup].subjects[1].title;
+  if (mode === 'subject3') return GROUP_UI[currentExamGroup].subjects[2].icon + ' ' + GROUP_UI[currentExamGroup].subjects[2].title;
+  if (mode === 'examTickets') return '🎫 ' + GROUP_UI[currentExamGroup].examTitle;
+  if (mode === 'fullEquipment') return '🧠 ' + GROUP_UI[currentExamGroup].fullTitle;
+
+  return MODE_NAMES[mode] || 'Режим';
+}
+
+
+
+function getIntroConfig(mode) {
+  const ui = GROUP_UI[currentExamGroup];
+
+  if (mode === 'subject1' || mode === 'subject2' || mode === 'subject3') {
+    const subjectIndex = mode === 'subject1' ? 0 : mode === 'subject2' ? 1 : 2;
+    const subject = ui.subjects[subjectIndex];
+
+    return {
+      icon: subject.icon,
+      title: subject.title,
+      button: 'Начать тест',
+      rules: [
+        'Вопросы идут в случайном порядке.',
+        'Варианты ответов перемешиваются.',
+        'На прохождение даётся 20 минут.',
+        'После завершения показываются ошибки и развёрнутые объяснения.'
+      ]
+    };
+  }
+
+  if (mode === 'examTickets') {
+    return {
+      icon: '🎫',
+      title: ui.examTitle,
+      button: 'Начать экзамен',
+      rules: [
+        'В каждом билете сразу 3 вопроса.',
+        'Допускается только 1 ошибка в билете.',
+        'При 2 ошибках билет считается несданным.',
+        'После несданного билета можно перейти к следующему.',
+        'Таймер в этом режиме отсутствует.',
+        'В конце показывается количество успешно сданных билетов.'
+      ]
+    };
+  }
+
+  if (mode === 'fullEquipment') {
+    return {
+      icon: '🧠',
+      title: ui.fullTitle,
+      button: 'Начать тестирование',
+      rules: [
+        'В тест входят все вопросы выбранной экзаменационной группы.',
+        'Все вопросы идут в случайном порядке.',
+        'Варианты ответов перемешиваются.',
+        'Таймер в этом режиме отсутствует.',
+        'После завершения показываются ошибки и развёрнутые объяснения.'
+      ]
+    };
+  }
+
+  return INTRO_CONFIG[mode];
+}
+
+
 function showIntro(mode) {
   pendingIntroMode = mode;
 
-  const config = INTRO_CONFIG[mode];
+  const config = getIntroConfig(mode);
 
   if (!config) {
     startTest(mode);
@@ -309,7 +485,7 @@ function renderTicketExam() {
   ticketExamWrongCount = 0;
   ticketExamCurrentResults = [];
 
-  document.getElementById('modeName').textContent = MODE_NAMES[currentMode];
+  document.getElementById('modeName').textContent = getModeDisplayName(currentMode);
   document.getElementById('progressText').textContent =
     `Билет ${ticketExamIndex + 1} / ${ticketExamTickets.length}`;
   document.getElementById('scoreText').textContent =
@@ -676,7 +852,7 @@ function renderQuestion() {
   const question = currentQuestions[currentIndex];
   selectedAnswer = null;
 
-  document.getElementById('modeName').textContent = MODE_NAMES[currentMode];
+  document.getElementById('modeName').textContent = getModeDisplayName(currentMode);
 
   document.getElementById('progressText').textContent =
     `Вопрос ${currentIndex + 1} / ${currentQuestions.length}`;
@@ -1089,3 +1265,6 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 }
+
+
+document.addEventListener('DOMContentLoaded', updateMenuForGroup);
